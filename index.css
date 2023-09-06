@@ -1,0 +1,19 @@
+.pixel {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+}
+
+.filterDetail {
+  font-family: "Consolas", "Menlo", "Ubuntu Mono", monospace;
+}
+
+.img-input {
+  /* width: 50%;
+  flex: 0 0 50%; */
+}
+
+.img-input-div {
+  background-image: url("./images/3rd-cab.jpg");
+  background-size: contain;
+}
