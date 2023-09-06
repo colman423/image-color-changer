@@ -1,73 +1,91 @@
-const canvas = document.getElementById("imageCanvas");
-const ctx = canvas.getContext("2d");
-const img = new Image();
-
-img.src = "./images/3rd-cab.jpg";
-
-img.onload = function () {
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+const getResolution = () => {
+  try {
+    const url = window.location.href;
+    const urlParams = new URLSearchParams(url.split("?")[1]); // Split the URL and get the query part
+    const res = urlParams.get("res");
+    return res || 1000;
+  } catch (error) {
+    return 1000;
+  }
 };
 
-function changeImageColor(hexColor) {
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
+$(document).ready(() => {
+  const canvas = document.getElementById("img-canvas");
+  const imgInput = document.getElementById("img-input");
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
+  const resolution = getResolution();
 
-    // Convert RGB to HSL
-    let hsl = rgbToHsl(r, g, b);
+  canvas.width = resolution;
+  canvas.height = resolution;
+  const ctx = canvas.getContext("2d");
 
-    // Modify the hue based on the user's input
-    hsl[0] = hexToHue(hexColor);
+  initImgSrc = "./images/Orange-color.jpg";
 
-    // Convert HSL back to RGB
-    const rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
+  var imageData = null;
+  function changeImageColor(hexColor) {
+    if (!imageData) {
+      imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+    const data = imageData.data;
 
-    data[i] = rgb[0];
-    data[i + 1] = rgb[1];
-    data[i + 2] = rgb[2];
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      // Convert RGB to HSL
+      let hsl = rgbToHsl(r, g, b);
+
+      // Modify the hue based on the user's input
+      hsl[0] = hexToHue(hexColor);
+
+      // Convert HSL back to RGB
+      const rgb = hslToRgb(hsl[0], hsl[1], hsl[2]);
+
+      data[i] = rgb[0];
+      data[i + 1] = rgb[1];
+      data[i + 2] = rgb[2];
+    }
+
+    ctx.putImageData(imageData, 0, 0);
   }
 
-  ctx.putImageData(imageData, 0, 0);
-}
+  function loadImage(imageSrc) {
+    const img = new Image();
+    img.src = imageSrc;
 
-$(document).ready(() => {
-  // Create a MutationObserver instance
-  const observer = new MutationObserver((mutationsList) => {
-    for (const mutation of mutationsList) {
-      if (
-        mutation.type === "attributes" &&
-        mutation.attributeName === "style"
-      ) {
-        // Check if 'color' property is modified
-        const element = mutation.target;
-        const style = window.getComputedStyle(element);
-        const currentColor = style.backgroundColor;
-        console.log(`Color changed to: ${currentColor}`);
-        const rgbList = currentColor
-          .substring(4)
-          .split(",")
-          .map((numStr) => parseInt(numStr));
+    img.onload = function () {
+      // canvas.width = window.innerWidth * 0.5;
+      canvas.height = (img.height / img.width) * canvas.width;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      imageData = null;
+    };
 
-        const hexVal = rgbToHex(currentColor);
+    $(imgInput).attr("src", imageSrc);
+  }
 
-        changeImageColor(hexVal);
+  $("input#file-uploader").on("change", function (event) {
+    const file = event.target.files[0];
 
-        $("input.target").val(hexVal);
-      }
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        loadImage(e.target.result);
+      };
+
+      reader.readAsDataURL(file);
     }
   });
-  observer.observe(document.querySelector(".pixel.realPixel"), {
-    attributes: true,
-    attributeFilter: ["style"],
+
+  var myPicker = new JSColor("#js-color-input", {
+    format: "hex",
+    previewSize: 100,
+    previewElement: "#color-block",
+    onInput: function () {
+      changeImageColor(this.toHEXString());
+    },
   });
 
-  $("input.target").on("keydown", function (e) {
-    if (e.key === "Enter") {
-      changeImageColor($(this).val());
-    }
-  });
+  loadImage(initImgSrc);
 });
